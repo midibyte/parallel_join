@@ -9,11 +9,17 @@
 // print a variable's name
 #define GET_VARIABLE_NAME(Variable) (#Variable)
 
-//super simple timer
+extern u_char DEBUG;
+
+/**
+ * ssTimer - super simple Timer
+ * adapted from:
+ * https://stackoverflow.com/questions/22387586/measuring-execution-time-of-a-function-in-c
+ * 
+ * **/
 class ssTimer
 {
-    // adapteed from:
-    // https://stackoverflow.com/questions/22387586/measuring-execution-time-of-a-function-in-c
+
     std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
     bool started, ended;
 
@@ -35,10 +41,13 @@ class ssTimer
             started = ended = false;
         }
 
+        // print elapsed time in ms
+        // need to call startTimer then endTimer first
         void printTimeElapsed(){
 
             if(!started || !ended){
-                std::cout << "Timer error: never started or ended" << std::endl;
+                if(DEBUG) std::cout << "Timer error: never started or ended" << std::endl;
+                return;
             }
             /* Getting number of milliseconds as an integer. */
             // auto ms_int = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
@@ -50,13 +59,45 @@ class ssTimer
             std::cout << ms_double.count() << "ms" << std::endl;
         }
 
+        // return elapsed time in ms
+        // need to call startTimer then endTimer first
+        double getTimeElapsed(){
+            if(!started || !ended){
+                if(DEBUG) std::cout << "Timer error: never started or ended" << std::endl;
+                return 0.0;
+            }
+            /* Getting number of milliseconds as a double. */
+            std::chrono::duration<double, std::milli> ms_double = end - start;
+
+            // std::cout << ms_int.count() << "ms\n";
+            // std::cout << ms_double.count() << "ms" << std::endl;
+
+            return ms_double.count();
+        }
+
+        //time1 is x faster than time2
+        double calculateSpeedup(double time1, double time2){
+            return time2/time1;
+        }
+        
+        //current timer is x faster than time2
+        double calculateSpeedup(double time2){
+            return calculateSpeedup(getTimeElapsed(), time2);
+        }
+
 };
 
-int random_in_range(int M = 28, int N = 35)
+/* 
+    return a random int in the range [M N]
+ */
+int random_in_range(int M, int N)
 {
     return (int)((double)rand() / ((double)RAND_MAX + 1) * N);
 }
 
+/* 
+    fill a vector with count random values in the range [M N]
+ */
 void fill_vector_with_random_values(std::vector<int> &v, size_t count, int M, int N)
 {
     v.reserve(count);
@@ -66,6 +107,9 @@ void fill_vector_with_random_values(std::vector<int> &v, size_t count, int M, in
     }
 }
 
+/**
+ * Fills a vector with count int values increasing by one starting from start
+ * **/
 void fill_vector_with_unique_increasing_values(std::vector<int> &v, size_t count, int start=0)
 {
     v.reserve(count);
@@ -75,19 +119,14 @@ void fill_vector_with_unique_increasing_values(std::vector<int> &v, size_t count
     }
 }
 
-void test(std::string x)
-{
-    std::cout << x;
-}
-
 /* 
     returns an index where the match is found
     or -1 for no match
  */
 template<class T>
-int find_in_vec(std::vector<T> vec, T element)
+T find_in_vector(std::vector<T> vec, T element)
 {
-    for (int i = 0; i < vec.size(); ++i)
+    for (size_t i = 0; i < vec.size(); ++i)
     {
         if (vec[i] == element)
             return i;
@@ -97,6 +136,10 @@ int find_in_vec(std::vector<T> vec, T element)
     return -1;
 }
 
+/**
+ * prints out a vector with one element per line
+ * can limit elements printed with printLimit
+ * **/
 template <class T>
 void print_vector(std::vector<T> vec, std::string name, size_t printLimit = -1)
 {
@@ -112,6 +155,31 @@ void print_vector(std::vector<T> vec, std::string name, size_t printLimit = -1)
     }
 }
 
+/**
+ * prints out a vector with one element per line
+ * can limit elements printed with printLimit
+ * **/
+template <class T>
+void print_vector_compact(std::vector<T> vec, std::string name, size_t printLimit = -1, int cols=5)
+{
+    size_t count = 0;
+    std::cout << "printing vector: " << name << "\n";
+    for (auto x : vec)
+    {
+        count++;
+
+        if (printLimit != (size_t)-1){
+            // stop when print limit reached
+            if (count > printLimit) break;
+        }
+
+        std::cout << x << "\t";
+
+        if(count % cols == 0) printf("\n");
+    }
+    printf("\n");
+}
+
 /* 
     matching elements in vec_a to keys in vec_b
     storing matching pairs in joinedVector
@@ -121,7 +189,7 @@ void join_vectors(const std::vector<T> vec_a, const std::vector<T> vec_b, std::v
 {
     for (auto elem : vec_a)
     {
-        T temp = find_in_vec(vec_b, elem);
+        T temp = find_in_vector(vec_b, elem);
         joinedVector.emplace_back(temp);
     }
 }
@@ -158,6 +226,9 @@ void combine_vectors(std::vector<std::vector<T>> inputVectors, std::vector<T> &f
     }
 }
 
+/**
+ * parallel version of join operation
+ * **/
 template <class T>
 void join_vectors_multithreaded(const std::vector<T> vec_a, const std::vector<T> vec_b, std::vector<T> &joinedVector, const size_t threadCount=1)
 {
@@ -170,7 +241,7 @@ void join_vectors_multithreaded(const std::vector<T> vec_a, const std::vector<T>
     split_vector(vec_a, partialVectors, threadCount);
     vector<vector<T>> partialJoinedVectors(threadCount);
 
-    cout << "number of partial vectors: " <<partialVectors.size() << endl;
+    if(DEBUG) cout << "number of partial vectors: " << partialVectors.size() << endl;
 
     // init all threads
 	for (size_t i = 0; i < threadCount; ++i)
@@ -180,7 +251,7 @@ void join_vectors_multithreaded(const std::vector<T> vec_a, const std::vector<T>
             split vec_a 
             pass whole vec_b to all threads
          */
-        cout << "calling thread: " << i << "\n";
+        if(DEBUG > 1) cout << "calling thread: " << i << "\n";
 
 		threads.push_back(thread(join_vectors<T>, partialVectors[i], vec_b, ref(partialJoinedVectors[i])) );
 	}
@@ -195,16 +266,3 @@ void join_vectors_multithreaded(const std::vector<T> vec_a, const std::vector<T>
     combine_vectors(partialJoinedVectors, joinedVector);
 
 }
-
-// class ssTable
-// {
-//     //private
-//     // std::map<std:string, int> mapNames
-//     // std::vector<std::map> maps;
-//     std::vector<std::vector<int>> tables;
-
-//     public:
-//         ssTable();
-//         void add_table(std::string name, )
-
-// };

@@ -39,15 +39,30 @@
 #include <time.h>
 #include <stdlib.h>
 
+u_char DEBUG = 0;
+u_char parallelOnly = 0;
+
+
 int main(int argc, char *argv[])
 {
     using namespace std;
 
-    std::cout << "argc == " << argc << '\n';
+    // std::cout << "argc == " << argc << '\n';
 
-    if (argc != 4){
+    if (argc < 4){
         printf("Inputs: table 1 size, table 2 size, number of threads\n");
         return EXIT_FAILURE;
+    }
+
+    else if(argc > 4){
+        DEBUG = atoi(argv[4]);
+        if(DEBUG != 0) printf("DEBUG ON, level = %d\n\n", DEBUG);
+        if (argc > 5)
+        {
+            parallelOnly = 1;
+            
+        }
+        
     }
 
     size_t threadCount, tableASize, tableBSize;
@@ -56,8 +71,8 @@ int main(int argc, char *argv[])
     tableASize = atoi(argv[1]);
     tableBSize = atoi(argv[2]);
 
-    printf("input: tableASize, tableBSize, threadCount: %zu, %zu, %zu\n", tableASize, tableBSize, threadCount);
-
+    if (DEBUG) printf("input: tableASize, tableBSize, threadCount: %zu, %zu, %zu\n", tableASize, tableBSize, threadCount);
+    if (parallelOnly) printf("Parallel only mode, threads: %ld\n", threadCount);
 
     vector<int> employee_table_vec;
     vector<int> department_table_vec;
@@ -72,37 +87,39 @@ int main(int argc, char *argv[])
     fill_vector_with_random_values(employee_table_vec, tableASize, 0, tableBSize);
     fill_vector_with_unique_increasing_values(department_table_vec, tableBSize);
 
+    // setup random generator funciton for shuffle
     std::random_device rd;
-    std::mt19937 g(rd());
-
-    std::shuffle(department_table_vec.begin(), department_table_vec.end(), g);
-    // display(list);
-
-    // shuffle(department_table_vec.begin(), department_table_vec.end(), rand());
+    std::mt19937 generator(rd());
+    //shuffle col 2
+    std::shuffle(department_table_vec.begin(), department_table_vec.end(), generator);
 
 
-    ssTimer timer;
-    timer.startTimer();
+    ssTimer timer, timerParallel;
+
+    //run parallel version and regular version and record times
+    timerParallel.startTimer();
     join_vectors_multithreaded(employee_table_vec, department_table_vec, matches_threaded, threadCount);
-    timer.endTimer();
+    timerParallel.endTimer();
 
-    timer.printTimeElapsed();
-
-    timer.clearTimer();
-    timer.startTimer();
-    join_vectors(employee_table_vec, department_table_vec, matches);
-    timer.endTimer();
-
-    timer.printTimeElapsed();
+    // regular version 
+    if (!parallelOnly)
+    {
+        timer.startTimer();
+        join_vectors(employee_table_vec, department_table_vec, matches);
+        timer.endTimer();
+    }
 
     // print first few values
-    print_vector(employee_table_vec, "employee_table_vec", 10);
-    print_vector(department_table_vec, "department_table_vec", 10);
-    print_vector(matches, "matches", 10);
-    print_vector(matches_threaded, "matches_threaded", 10);
+    if(DEBUG) print_vector_compact(employee_table_vec, "employee_table_vec", 10);
+    if(DEBUG) print_vector_compact(department_table_vec, "department_table_vec", 10);
+    if(DEBUG && !parallelOnly) print_vector_compact(matches, "matches", 10);
+    if(DEBUG) print_vector_compact(matches_threaded, "matches_threaded", 10);
 
-    // check results
-    
+    // print results
+    if (!parallelOnly) printf("Join Runtime:\t\t%.2f ms\n", timer.getTimeElapsed());
+    printf("Parallel Join Runtime:\t%.2f ms\n", timerParallel.getTimeElapsed());
+    if (!parallelOnly) printf("Speedup:\t\t");
+    if (!parallelOnly) printf("%.2f\n", timerParallel.calculateSpeedup(timer.getTimeElapsed()));
 
     return 0;
 }
