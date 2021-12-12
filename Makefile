@@ -4,7 +4,7 @@ SOURCE	= parallel_join.cpp
 HEADER	= helper.hpp
 OUT	= parallel_join
 CC	 = g++
-FLAGS	 = -c -Wall --std=c++17
+FLAGS	 = -c --std=c++11
 LFLAGS	 = -lpthread
 # -g option enables debugging mode 
 # -c flag generates object code for separate files

@@ -1,25 +1,6 @@
 /* 
     Logan Kelly 
     Parallel Join
-
-    example tables from wikipedia
-
-    //tables
-    std::map<std::string, int> employee_table;
-    std::map<int, std::string> department_table;
-
-    // setup tables
-    employee_table["Rafferty"] = 31;
-    employee_table["Jones"] = 33;
-    employee_table["Heisenberg"] = 33;
-    employee_table["Robinson"] = 34;
-    employee_table["Smith"] = 34;
-    employee_table["Williams"] = -1;
-
-    department_table[31] = "Sales";
-    department_table[33] = "Engineering";
-    department_table[34] = "Clerical";
-    department_table[35] = "Marketing";
  */
 
 #include <thread>       // threads
