@@ -1,4 +1,8 @@
-parallel join program
+parallel join
+
+This program implements a parallel algorithm for the SQL JOIN operation.
+The goal is to show the potential performance that can be gained by implementing a parallelized algorithm.
+The speedup is shown by running a single threaded algorithm and the parallel algorithm on the same dataset and comparing their runtimes.
 
 requirements:
     make
